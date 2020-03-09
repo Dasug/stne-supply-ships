@@ -1,0 +1,38 @@
+#UseInterface Web, Gui;
+
+Function findSupplyScript() As CScript {
+  Var enumerator As New CScriptEnumerator();
+  Var current As CScript;
+  While(enumerator.Next()) {
+    current = enumerator.CurrentScript;
+    If(current.Name = "Konfigurierbare Schiffs-Versorgung") {
+      return current;
+    }
+  }
+
+  Return Null;
+}
+
+Function Init() {
+  Var script As CScript = findSupplyScript();
+  if(script Is Null) {
+    ScriptContext.WriteAppLog("Das Script wurde nicht gefunden. Bitte installiere das Script 'Konfigurierbare Schiffs-Versorgung' aus der Script-Bibliothek.");
+    Return;
+  }
+  ScriptContext.EnableExtension();
+  Var PageFilter As CGuiEventFilter = CGuiEventFilter.Create().AddPage(EGuiPage.ShipList);
+  ScriptContext.RegisterEvent(EGuiEventType.PageBeforeRender, AddressOf CallBack_PageBeforeRender, PageFilter);
+  ScriptContext.ActivateEvents();
+  ScriptContext.WriteAppLog("Button zur Schiffs-Versorgung aktiv!");
+}
+
+Function CallBack_PageBeforeRender(e As CGuiEventOnPageBeforeRender) {
+  Var script As CScript = findSupplyScript();
+  Var url As CUrl = CUrlBuilder.Script(script.ScriptID);
+  Var supplyButton As CHtmlLinkButton = New CHtmlLinkButton('Schiffe Versorgen', url, 'Schiffe Versorgen per Script');
+  Var break As New CHtmlBreak();
+  e.Page.Body.Add(break.GuiControl);
+  e.Page.Body.Add(supplyButton.GuiControl);
+}
+
+Init();
