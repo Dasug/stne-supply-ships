@@ -620,7 +620,7 @@ Function buildCreditsMainArea(MainAreaCell As CTableCell) As CHtmlControl {
   idSpan.CssClass = "deact";
   creditsParagraph.Add(idSpan);
   
-  creditsParagraph.Add(", dass er mich solange damit genervt hat, bis ich es tatsächlich geschrieben habe ;-)")
+  creditsParagraph.Add(", dass er mich solange damit genervt hat, bis ich es tatsächlich geschrieben habe ;-)");
   
   Html.Add(creditsParagraph);
   
