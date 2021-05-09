@@ -28,7 +28,7 @@ Function Init() {
 
 Function CallBack_PageBeforeRender(e As CGuiEventOnPageBeforeRender) {
   Var script As CScript = findSupplyScript();
-  Var url As CUrl = CUrlBuilder.Script(script.ScriptID);
+  Var url As CUrl = CUrlBuilder.Script(script.ScriptID, True);
   Var supplyButton As CHtmlLinkButton = New CHtmlLinkButton('Schiffe Versorgen', url, 'Schiffe Versorgen per Script');
   Var break As New CHtmlBreak();
   e.Page.Body.Add(break.GuiControl);
