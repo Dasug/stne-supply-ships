@@ -158,6 +158,21 @@ Function createCheckBox(checkedByDefault As Boolean, name As String, text As Str
   Return New CHtmlCheckBox(checked, name, text);
 }
 
+// As there is no way to set whether a radio button is selected or not we'll cheat a bit and create a checkbox first but turn it into a radio button later
+Function createRadio(selectedByDefault As Boolean, name As String, value As String) As CHtmlCheckBox {
+  Var selected As Boolean;
+  If(Request.Form.Count > 0 And Request.Form.ContainsKey(name)) {
+    selected = Request.Form.Item(name) = value;
+  } Else {
+    selected = selectedByDefault;
+  }
+  Var radio As New CHtmlCheckBox(selected, name);
+  radio.Type­ =­ EHtmlInputType.Radio;
+  radio.Value = value;
+
+  Return radio;
+}
+
 Function createInput(default As String, name As String, type As EHtmlInputType) As CHtmlInput {
   Var value As String;
   If(Request.Form.Count > 0) {
@@ -224,21 +239,21 @@ Function createEnergyRow() As CHtmlControl {
   cellB.CssClass = "l";
   
   Var fullInputSpan As New CHtmlSpan();
-  fullInputSpan.Add(New CHtmlInput("full", "energy-mode", EHtmlInputType.Radio));
+  fullInputSpan.Add(createRadio(False, "energy-mode", "full"));
   fullInputSpan.ToolTip = "Maximal mögliche Energie übertragen. Kann beim versorgenden und / oder versorgten Schiff zur Überhitzung des EPS führen!";
   fullInputSpan.Add(" Voll auffüllen");
   cellB.Add(fullInputSpan);
   
   cellB.Add(New CHtmlBreak());
   Var hcInputSpan As New CHtmlSpan();
-  hcInputSpan.Add(New CHtmlInput("computer", "energy-mode", EHtmlInputType.Radio));
+  hcInputSpan.Add(createRadio(True, "energy-mode", "computer"));
   hcInputSpan.ToolTip = "Ausreichend Energie zum Aktivieren des Hauptcomputers senden";
   hcInputSpan.Add(" Nur für Hauptcomputer");
   cellB.Add(hcInputSpan);
   
   cellB.Add(New CHtmlBreak());
   Var fixedInputSpan As New CHtmlSpan();
-  Var fixedInput As New CHtmlInput("fixed", "energy-mode", EHtmlInputType.Radio);
+  Var fixedInput As CHtmlInput = createRadio(False, "energy-mode", "fixed");
   fixedInputSpan.ToolTip = "Auf feste Menge an Energie auffüllen, sofern möglich. Kann nur weniger als die eingestellte Menge gesendet werden, wird die maximal mögliche Menge gesendet.";
   Var fixedAmountInput As CHtmlInput = createInput("0", "energy-fixed-amount", EHtmlInputType.Float);
   fixedAmountInput.Style.Add("width", "50px");
@@ -250,7 +265,7 @@ Function createEnergyRow() As CHtmlControl {
   
   cellB.Add(New CHtmlBreak());
   Var suppliedBufferSpan As New CHtmlSpan();
-  Var suppliedBufferInput As New CHtmlInput("fixed-left", "energy-mode", EHtmlInputType.Radio);
+  Var suppliedBufferInput As CHtmlInput = createRadio(False, "energy-mode", "fixed-left");
   suppliedBufferSpan.ToolTip = "Sende so viel Energie, dass noch die eingestellte Menge an EPS am empfangenden Schiff übrig ist.";
   Var suppliedBufferAmountInput As CHtmlInput = createInput("1", "energy-supplied-buffer", EHtmlInputType.Float);
   suppliedBufferAmountInput.Style.Add("width", "50px");
@@ -294,21 +309,21 @@ Function createCrewRow() As CHtmlControl {
   cellB.CssClass = "l";
   
   Var fullInputSpan As New CHtmlSpan();
-  fullInputSpan.Add(New CHtmlInput("full", "crew-mode", EHtmlInputType.Radio));
+  fullInputSpan.Add(createRadio(False, "crew-mode", "full"));
   fullInputSpan.ToolTip = "Crew bis zur Maximal-Crew auffüllen.";
   fullInputSpan.Add(" Voll auffüllen");
   cellB.Add(fullInputSpan);
   
   cellB.Add(New CHtmlBreak());
   Var hcInputSpan As New CHtmlSpan();
-  hcInputSpan.Add(New CHtmlInput("base", "crew-mode", EHtmlInputType.Radio));
+  hcInputSpan.Add(createRadio(True, "crew-mode", "base"));
   hcInputSpan.ToolTip = "Crew nur bis zur Basis-Crew auffüllen";
   hcInputSpan.Add(" Nur Basis-Crew");
   cellB.Add(hcInputSpan);
   
   cellB.Add(New CHtmlBreak());
   Var fixedInputSpan As New CHtmlSpan();
-  Var fixedInput As New CHtmlInput("fixed", "crew-mode", EHtmlInputType.Radio);
+  Var fixedInput As CHtmlInput = createRadio(False, "crew-mode", "fixed");
   fixedInputSpan.ToolTip = "Auf feste Anzahl an Crew-Mitgliedern auffüllen.";
   Var fixedAmountInput As CHtmlInput = createInput("0", "crew-fixed-amount", EHtmlInputType.Number);
   fixedAmountInput.Style.Add("width", "50px");
@@ -396,14 +411,14 @@ Function createWarpcoreRow() As CHtmlControl {
   cellB.CssClass = "l";
   
   Var fullInputSpan As New CHtmlSpan();
-  fullInputSpan.Add(New CHtmlInput("full", "warpcore-mode", EHtmlInputType.Radio));
+  fullInputSpan.Add(createRadio(True, "warpcore-mode", "full"));
   fullInputSpan.ToolTip = "Warpkern bis zur Maximal-Kapazität auffüllen.";
   fullInputSpan.Add(" Voll auffüllen");
   cellB.Add(fullInputSpan);
   
   cellB.Add(New CHtmlBreak());
   Var fixedInputSpan As New CHtmlSpan();
-  Var fixedInput As New CHtmlInput("fixed", "warpcore-mode", EHtmlInputType.Radio);
+  Var fixedInput As CHtmlInput = createRadio(False, "warpcore-mode", "fixed");
   fixedInputSpan.ToolTip = "Auf feste Menge an Warpkernenergie auffüllen.";
   Var fixedAmountInput As CHtmlInput = createInput("0", "warpcore-fixed-amount", EHtmlInputType.Float);
   fixedAmountInput.Style.Add("width", "75px");
