@@ -281,7 +281,11 @@ Function createEnergyRow() As CHtmlControl {
   Var bufferInput As CHtmlInput = createInput("10", "energy-supplier-buffer", EHtmlInputType.Float);
   bufferInput.Style.Add("width", "50px");
   bufferSpan.Add(bufferInput);
-  bufferSpan.Add(" Einheiten");
+  bufferSpan.Add(" EPS, ");
+  Var bufferInputEnergy As CHtmlInput = createInput("10", "energy-supplier-buffer-energy", EHtmlInputType.Float);
+  bufferSpan.Add(bufferInputEnergy);
+  bufferInputEnergy.Style.Add("width", "50px");
+  bufferSpan.Add(" Hauptenergie");
   bufferSpan.ToolTip = "Energie- / EPS-Menge, die auf dem versorgenden Schiff nicht unterschritten werden darf.";
   cellB.Add(bufferSpan);
   
@@ -984,7 +988,8 @@ Function shipCanSupply(supplier As CMyShip, requirements As CStringObjectHashTab
   }
   If(requirements.ContainsKey("energy")) {
     Var energyBuffer As Double = Double.Parse(Request.Form.Item("energy-supplier-buffer"));
-    If(supplier.Energy > energyBuffer + 0.01 And supplier.Eps > energyBuffer + 0.01) {
+    Var energyBufferEnergy As Double = Double.Parse(Request.Form.Item("energy-supplier-buffer-energy"));
+    If(supplier.Energy > energyBufferEnergy + 0.01 And supplier.Eps > energyBuffer + 0.01) {
       Return True;
     }
   }
@@ -1024,14 +1029,15 @@ Function supplyCrew(supplier As CMyShip, supplied As CMyShip, requirements As CS
 
 Function supplyEnergy(supplier As CMyShip, supplied As CMyShip, requirements As CStringObjectHashTable) {
   Var energyBuffer As Double = Double.Parse(Request.Form.Item("energy-supplier-buffer"));
-  If(supplier.Energy < energyBuffer + 0.01 Or supplier.Eps < energyBuffer + 0.01) {
+  Var energyBufferEnergy As Double = Double.Parse(Request.Form.Item("energy-supplier-buffer-energy"));
+  If(supplier.Energy < energyBufferEnergy + 0.01 Or supplier.Eps < energyBuffer + 0.01) {
     Return;
   }
   If( not requirements.ContainsKey("energy")) {
     Return;
   }
   Var requirement As Double = requirements.Item("energy");
-  Var transferAmount As Double = Math.Min(requirement, supplier.Energy - energyBuffer);
+  Var transferAmount As Double = Math.Min(requirement, supplier.Energy - energyBufferEnergy);
   transferAmount = Math.Min(transferAmount, supplier.Eps - energyBuffer);
   supplier.Action.TransferToShip(supplied.ShipID, transferAmount, EBeamResource.Energy);
   requirements.Remove("energy");
