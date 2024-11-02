@@ -4,7 +4,7 @@
 Var debug As Boolean = False; // Auf True setzen um Debug-Ausgaben zu bekommen
 Var torpedoGoodsIDList As CIntegerList = CIntegerList.CreateFromString("8,19,20,32,33,34", ",");
 Var startDate As Date = DateTime.Now; // check date to prevent taking too much runtime
-Var scriptVersion As Integer = 3;
+Var scriptVersion As Integer = 5;
 
 // ------------------ Framework functions ------------------
 
