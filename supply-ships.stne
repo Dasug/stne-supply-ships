@@ -4,7 +4,7 @@
 Var debug As Boolean = False; // Auf True setzen um Debug-Ausgaben zu bekommen
 Var torpedoGoodsIDList As CIntegerList = CIntegerList.CreateFromString("8,19,20,32,33,34", ",");
 Var startDate As Date = DateTime.Now; // check date to prevent taking too much runtime
-Var scriptVersion As Integer = 5;
+Var scriptVersion As Integer = 6;
 
 // ------------------ Framework functions ------------------
 
@@ -506,6 +506,38 @@ Function createMiscRow() As CHtmlControl {
   
   Return row;
 }
+Function createBeamSettingsRow() As CHtmlControl {
+  Var row As New CTableRow();
+  Var imageCell As New CTableCell();
+  Var image As New CHtmlImage(getLocalServerAddress()&"i/b/beamto.gif");
+  imageCell.Add(image);
+  imageCell.CssClass = "img";
+  row.Add(imageCell);
+
+  Var beamToolTip As String = "Welche Schiffe übernehmen den Beam-Vorgang und verbrauchen die entsprechende Energie zum Beamen wenn sie nicht angedockt sind?";
+
+  Var cellA As New CTableCell();
+  cellA.CssClass = "l";
+  Var beamLabelSpan As New CHtmlSpan();
+  beamLabelSpan.Add("Beamende Schiffe");
+  beamLabelSpan.ToolTip = beamToolTip;
+  cellA.Add(beamLabelSpan);
+  row.Add(cellA);
+
+  Var cellB As New CTableCell();
+  cellB.CssClass = "l";
+  Var beamSpan As New CHtmlSpan();
+  Var beamOriginValues[] As String = {"supplier", "supplied"};
+  Var beamOriginNames[] As String = {"Versorger-Flotte", "Zu versorgende Flotte"};
+  Var beamSelect As CHtmlListBox = createSelectBox(beamOriginValues[0], "beam-origin", beamOriginValues, beamOriginNames);
+  beamSelect.Style.Add("width", "184px");
+  beamSpan.Add(beamSelect);
+  beamSpan.ToolTip = beamToolTip;
+  cellB.Add(beamSpan);
+  row.Add(cellB);
+  
+  Return row;
+}
 
 Function createSubmitRow() As CHtmlControl {
   Var row As New CTableRow();
@@ -530,6 +562,7 @@ Function createSupplyForm() As CHtmlControl {
   table.Add(createEnergyRow());
   table.Add(createWarpcoreRow());
   table.Add(createResourceRow());
+  table.Add(createBeamSettingsRow());
   table.Add(createMiscRow());
   table.Add(createDockingRow());
   table.Add(createSubmitRow());
@@ -1010,7 +1043,7 @@ Function shipCanSupply(supplier As CMyShip, requirements As CStringObjectHashTab
   Return False;
 }
 
-Function supplyCrew(supplier As CMyShip, supplied As CMyShip, requirements As CStringObjectHashTable) {
+Function supplyCrew(supplier As CMyShip, supplied As CMyShip, requirements As CStringObjectHashTable, fromSupplier as Boolean) {
   Var crewReserve As Integer = Math.Ceiling(supplier.Definition.CrewBasis * Double.Parse(Request.Form.Item("crew-supplier-buffer")) / 100.0);
   If(supplier.Crew - crewReserve <= 0) {
     Return;
@@ -1020,14 +1053,18 @@ Function supplyCrew(supplier As CMyShip, supplied As CMyShip, requirements As CS
   }
   Var requirement As Integer = requirements.Item("crew");
   Var transferAmount As Integer = Math.Min(requirement, supplier.Crew - crewReserve);
-  supplier.Action.TransferToShip(supplied.ShipID, transferAmount, EBeamResource.Crew);
+  If(fromSupplier) {
+    supplier.Action.TransferToShip(supplied.ShipID, transferAmount, EBeamResource.Crew);
+  } Else {
+    supplied.Action.TransferFromShip(supplier.ShipID, transferAmount, EBeamResource.Crew);
+  }
   requirements.Remove("crew");
   If(requirement - transferAmount > 0) {
     requirements.Add("crew", requirement - transferAmount);
   }
 }
 
-Function supplyEnergy(supplier As CMyShip, supplied As CMyShip, requirements As CStringObjectHashTable) {
+Function supplyEnergy(supplier As CMyShip, supplied As CMyShip, requirements As CStringObjectHashTable, fromSupplier as Boolean) {
   Var energyBuffer As Double = Double.Parse(Request.Form.Item("energy-supplier-buffer"));
   Var energyBufferEnergy As Double = Double.Parse(Request.Form.Item("energy-supplier-buffer-energy"));
   If(supplier.Energy < energyBufferEnergy + 0.01 Or supplier.Eps < energyBuffer + 0.01) {
@@ -1039,14 +1076,18 @@ Function supplyEnergy(supplier As CMyShip, supplied As CMyShip, requirements As 
   Var requirement As Double = requirements.Item("energy");
   Var transferAmount As Double = Math.Min(requirement, supplier.Energy - energyBufferEnergy);
   transferAmount = Math.Min(transferAmount, supplier.Eps - energyBuffer);
-  supplier.Action.TransferToShip(supplied.ShipID, transferAmount, EBeamResource.Energy);
+  If(fromSupplier) {
+    supplier.Action.TransferToShip(supplied.ShipID, transferAmount, EBeamResource.Energy);
+  } Else {
+    supplied.Action.TransferFromShip(supplier.ShipID, transferAmount, EBeamResource.Energy);
+  }
   requirements.Remove("energy");
   If(requirement - transferAmount > 0) {
     requirements.Add("energy", requirement - transferAmount);
   }
 }
 
-Function supplyWarpCore(supplier As CMyShip, supplied As CMyShip, requirements As CStringObjectHashTable) {
+Function supplyWarpCore(supplier As CMyShip, supplied As CMyShip, requirements As CStringObjectHashTable, fromSupplier as Boolean) {
   If(supplier.WarpCore <= Math.Ceiling(supplier.Definition.WarpCore / 10.0)) {
     Return;
   }
@@ -1055,14 +1096,18 @@ Function supplyWarpCore(supplier As CMyShip, supplied As CMyShip, requirements A
   }
   Var requirement As Double = requirements.Item("warpcore");
   Var transferAmount As Double = Math.Min(requirement, supplier.WarpCore - Math.Ceiling(supplier.Definition.WarpCore / 10.0));
-  supplier.Action.TransferToShip(supplied.ShipID, transferAmount, EBeamResource.Warpcore);
+  If(fromSupplier) {
+    supplier.Action.TransferToShip(supplied.ShipID, transferAmount, EBeamResource.Warpcore);
+  } Else {
+    supplied.Action.TransferFromShip(supplier.ShipID, transferAmount, EBeamResource.Warpcore);
+  }
   requirements.Remove("warpcore");
   If(requirement - transferAmount > 0) {
     requirements.Add("warpcore", requirement - transferAmount);
   }
 }
 
-Function supplyResources(supplier As CMyShip, supplied As CMyShip, requirements As CStringObjectHashTable) {
+Function supplyResources(supplier As CMyShip, supplied As CMyShip, requirements As CStringObjectHashTable, fromSupplier as Boolean) {
   Var resources As New CGoodsInfoEnumerator();
   Var resource As CGoodsInfo;
   While(resources.Next()) {
@@ -1070,7 +1115,11 @@ Function supplyResources(supplier As CMyShip, supplied As CMyShip, requirements 
     If(requirements.ContainsKey(CStr(resource.GoodsID)) And supplier.StockRoom.Amount(resource.GoodsType) > 0) {
       Var requirement As Integer = requirements.Item(CStr(resource.GoodsID));
       Var transferAmount As Double = Math.Min(requirement, supplier.StockRoom.Amount(resource.GoodsType));
-      supplier.Action.TransferToShip(supplied.ShipID, transferAmount, resource.GoodsType);
+      If(fromSupplier)  {
+        supplier.Action.TransferToShip(supplied.ShipID, transferAmount, resource.GoodsType);
+      } Else {
+        supplied.Action.TransferFromShip(supplier.ShipID, transferAmount, resource.GoodsType);
+      }
       requirements.Remove(CStr(resource.GoodsID));
       If(requirement - transferAmount > 0) {
         requirements.Add(CStr(resource.GoodsID), requirement - transferAmount);
@@ -1195,6 +1244,7 @@ Function executeSupply() {
   Var fulfilledShips As Integer = 0;
   Var alreadyFulfilledShips As Integer = 0;
   Var unfulfilledShips As Integer = 0;
+  Var fromSupplier As Boolean = (not formValues.ContainsKey("beam-origin") or formValues.Item("beam-origin") <> "supplied");
   
   For(Each suppliedShip In suppliedShips) {
     Var requirements As CStringObjectHashTable = getRequirements(suppliedShip);
@@ -1214,19 +1264,19 @@ Function executeSupply() {
           }
           
           If(formValues.ContainsKey("send-crew")) {
-            supplyCrew(supplierShip, suppliedShip, requirements);
+            supplyCrew(supplierShip, suppliedShip, requirements, fromSupplier);
           }
           
           If(formValues.ContainsKey("send-energy")) {
-            supplyEnergy(supplierShip, suppliedShip, requirements);
+            supplyEnergy(supplierShip, suppliedShip, requirements, fromSupplier);
           }
           
           If(formValues.ContainsKey("send-warpcore")) {
-            supplyWarpCore(supplierShip, suppliedShip, requirements);
+            supplyWarpCore(supplierShip, suppliedShip, requirements, fromSupplier);
           }
           
           If(formValues.ContainsKey("send-resources")) {
-            supplyResources(supplierShip, suppliedShip, requirements);
+            supplyResources(supplierShip, suppliedShip, requirements, fromSupplier);
           }
           
           If(dockToStation) {
